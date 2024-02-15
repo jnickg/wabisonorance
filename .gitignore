@@ -11,6 +11,7 @@ _deps
 **/.DS_Store
 
 # It's nice to have the Builds folder exist, to remind us where it is
+build/
 Builds/*
 !Builds/.gitkeep
 
@@ -22,6 +23,7 @@ Testing
 
 # IDE config
 .idea
+.vscode
 
 # clion cmake builds
 cmake-build-debug

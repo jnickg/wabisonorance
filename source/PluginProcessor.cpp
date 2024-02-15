@@ -1,6 +1,10 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+#include <juce_dsp/juce_dsp.h>
+
+#include <cmath>
+
 //==============================================================================
 PluginProcessor::PluginProcessor()
      : AudioProcessor (BusesProperties()
@@ -12,6 +16,12 @@ PluginProcessor::PluginProcessor()
                      #endif
                        )
 {
+    auto* v = synth.addVoice(new jnickg::audio::ws::Voice());
+    auto* s = synth.addSound(new jnickg::audio::ws::Sound());
+
+    if (v == nullptr || s == nullptr) {
+        throw std::runtime_error("Failed to add voice or sound to synth");
+    }
 }
 
 PluginProcessor::~PluginProcessor()
@@ -86,9 +96,15 @@ void PluginProcessor::changeProgramName (int index, const juce::String& newName)
 //==============================================================================
 void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
-    juce::ignoreUnused (sampleRate, samplesPerBlock);
+    this->synth.setCurrentPlaybackSampleRate(sampleRate);
+    
+    auto outputChannels = this->getTotalNumOutputChannels();
+    for (auto i = 0; i < this->synth.getNumVoices(); ++i) {
+        auto* voice = dynamic_cast<jnickg::audio::ws::Voice*>(this->synth.getVoice(i));
+        if (voice != nullptr) {
+            voice->prepareToPlay(sampleRate, samplesPerBlock, outputChannels);
+        }
+    }
 }
 
 void PluginProcessor::releaseResources()
@@ -122,33 +138,29 @@ bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
-    juce::ignoreUnused (midiMessages);
+    juce::ignoreUnused (midiMessages); // TODO: use midiMessages to get notes
 
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i) {
         buffer.clear (i, 0, buffer.getNumSamples());
-
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-        juce::ignoreUnused (channelData);
-        // ..do something to the data...
     }
+
+    // Update all voices with the current parameters
+    for (auto i = 0; i < this->synth.getNumVoices(); ++i) {
+        auto* voice = dynamic_cast<jnickg::audio::ws::Voice*>(this->synth.getVoice(i));
+        if (voice != nullptr) {
+            // Oscillator controlls
+            // ADSR
+            // LFO
+            // Filter
+            // Gain
+        }
+    }
+
+    this->synth.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
 }
 
 //==============================================================================
