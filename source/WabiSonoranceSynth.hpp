@@ -1,8 +1,10 @@
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
+#include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 
+#include <algorithm>
 #include <cmath>
 #include <unordered_map>
 #include <memory>
@@ -71,13 +73,37 @@ private:
         Triangle
     };
 
-    OscillatorType selected_osc { OscillatorType::Sine };
+    OscillatorType selected_osc { OscillatorType::Triangle };
+
+    float clip { 0.6f }; ///< Pre-gain clipping value for the waveform.
+
+    float sine_wave(float t) {
+        auto val = std::sin(t);
+        return std::clamp(val, -clip, clip);
+    }
+
+    float saw_wave(float t) {
+        auto val = t / juce::MathConstants<float>::pi;
+        return std::clamp(val, -clip, clip);
+    }
+
+    float square_wave(float t) {
+        auto val = t < 0.0f ? -1.0f : 1.0f;
+        return std::clamp(val, -clip, clip);
+    }
+
+    float triangle_wave(float t) {
+        auto val = 2.0f * std::abs(t - std::round(t)) - 1.0f;
+        return std::clamp(val, -clip, clip);
+    }
+
+    const size_t NUM_LUT_SAMPLES = 1200;
 
     std::unordered_map<OscillatorType, std::shared_ptr<osc_t>> oscillators = {
-        { OscillatorType::Sine, std::make_shared<osc_t>([](float t){ return std::sin(t); })},
-        { OscillatorType::Saw, std::make_shared<osc_t>([](float t){ return t / juce::MathConstants<float>::pi; })},
-        { OscillatorType::Square, std::make_shared<osc_t>([](float t){ return t < 0.0f ? -1.0f : 1.0f; })},
-        { OscillatorType::Triangle, std::make_shared<osc_t>( [](float t){ return 2.0f * std::abs(t - std::round(t)) - 1.0f; }) }
+        { OscillatorType::Sine, std::make_shared<osc_t>([this](float t){ return this->sine_wave(t); }, NUM_LUT_SAMPLES)},
+        { OscillatorType::Saw, std::make_shared<osc_t>([this](float t){ return this->saw_wave(t); }, NUM_LUT_SAMPLES)},
+        { OscillatorType::Square, std::make_shared<osc_t>([this](float t){ return this->square_wave(t); }, NUM_LUT_SAMPLES)},
+        { OscillatorType::Triangle, std::make_shared<osc_t>( [this](float t){ return this->triangle_wave(t); }, NUM_LUT_SAMPLES)}
     };
     juce::dsp::Gain<float> gain;
     juce::ADSR adsr;
