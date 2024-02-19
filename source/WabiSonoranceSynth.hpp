@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <unordered_map>
 #include <memory>
 
@@ -107,8 +108,36 @@ private:
     };
     juce::dsp::Gain<float> gain;
     juce::ADSR adsr;
+    int pitch_wheel_position { 0 };
+    double pitch_base { 440.0 }; ///< Base pitch in Hz.
+    double pitch_bend { 1.0 }; ///< Factor by which to bend the pitch.
 
     bool isPrepared { false };
+    bool isActive { false };
+
+    inline bool is_active() const {
+        return this->isActive || this->adsr.isActive();
+    }
+
+    void update_pitch(std::optional<double> base = std::nullopt, std::optional<double> bend = std::nullopt) {
+        if (base) {
+            this->pitch_base = *base;
+        }
+        if (bend) {
+            this->pitch_bend = *bend;
+        }
+        auto freq = this->pitch_base * this->pitch_bend;
+        for (auto& osc : this->oscillators) {
+            osc.second->setFrequency(static_cast<float>(freq));
+        }
+    }
+
+    inline bool pitch_wheel_pos_to_semitones(int pos) const {
+        // pitch wheel value is a 14-bit value, allowing for 16,384 possible values
+        // We want to map this to a range of +- 2 semitones
+        auto semitones = 2.0 *  std::clamp(static_cast<double>(pos) / 16384.0, -1.0, 1.0);
+        auto bend = std::pow(2.0, semitones / 12.0);
+    }
 };
 
 } // namespace jnickg::audio::ws

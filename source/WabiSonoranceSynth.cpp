@@ -1,5 +1,7 @@
 #include "WabiSonoranceSynth.hpp"
 
+#include <algorithm>
+
 namespace jnickg::audio::ws {
 
 void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSound* sound, int currentPitchWheelPosition) {
@@ -8,22 +10,33 @@ void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSoun
     juce::ignoreUnused(sound);
     juce::ignoreUnused(currentPitchWheelPosition);
 
-    auto freq = juce::MidiMessage::getMidiNoteInHertz(midiNoteNumber);
-    for (auto& osc : this->oscillators) {
-        osc.second->setFrequency(static_cast<float>(freq));
-    }
+    auto base = juce::MidiMessage::getMidiNoteInHertz(midiNoteNumber);
+    auto bend = this->pitch_wheel_pos_to_semitones(currentPitchWheelPosition);
+    this->update_pitch(base, bend);
+
+    auto params = this->adsr.getParameters();
+    params.attack = 0.1f * (1.0f - velocity);
+    this->adsr.setParameters(params);
+
     this->adsr.noteOn();
+    this->isActive = true;
 }
 
 void Voice::stopNote (float velocity, bool allowTailOff) {
     juce::ignoreUnused(velocity);
     juce::ignoreUnused(allowTailOff);
 
+    auto params = this->adsr.getParameters();
+    params.release = 0.1f * (1.0f - velocity);
+    this->adsr.setParameters(params);
+
     this->adsr.noteOff();
+    this->isActive = false;
 }
 
 void Voice::pitchWheelMoved (int newPitchWheelValue) {
-    juce::ignoreUnused(newPitchWheelValue);
+    auto bend = this->pitch_wheel_pos_to_semitones(newPitchWheelValue);
+    this->update_pitch(std::nullopt, bend);
 }
 
 void Voice::controllerMoved (int controllerNumber, int newControllerValue) {
@@ -33,8 +46,14 @@ void Voice::controllerMoved (int controllerNumber, int newControllerValue) {
 
 void Voice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int startSample, int numSamples) {
     jassert(this->isPrepared);
-    juce::ignoreUnused(startSample);
-    juce::ignoreUnused(numSamples);
+
+    if (numSamples == 0) {
+        return;
+    }
+
+    if (!this->is_active()) {
+        return;
+    }
 
     using replace_t = juce::dsp::ProcessContextReplacing<float>;
     using block_t = juce::dsp::AudioBlock<float>;
