@@ -54,13 +54,16 @@ void Voice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int startSa
         return;
     }
 
-    using replace_t = juce::dsp::ProcessContextReplacing<float>;
-    using block_t = juce::dsp::AudioBlock<float>;
-    block_t block { outputBuffer };
-    const auto osc = this->oscillators[selected_osc];
-    osc->process(replace_t(block));
-    this->adsr.applyEnvelopeToBuffer(outputBuffer, startSample, numSamples);
-    this->gain.process(replace_t(block));
+    for (int sample = startSample; sample < startSample + numSamples; ++sample) {
+        auto osc_sample = this->oscillators[selected_osc]->processSample(0.0f);
+        osc_sample *= this->adsr.getNextSample();
+        osc_sample *= this->gain.getGainLinear();
+        outputBuffer.addSample(0, sample, osc_sample);
+
+        // TODO use 5 total oscillators, set to the pitches of the notes in a randomly chosen
+        // chord, then add them here.
+    }
+
 }
 
 void Voice::prepareToPlay(double sampleRate, int samplesPerBlock, int outputChannels) {

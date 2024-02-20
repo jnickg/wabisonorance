@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "NotesKeys.hpp"
 
 #include <juce_dsp/juce_dsp.h>
 
@@ -22,6 +23,8 @@ PluginProcessor::PluginProcessor()
     if (v == nullptr || s == nullptr) {
         throw std::runtime_error("Failed to add voice or sound to synth");
     }
+
+    jnickg::audio::init_chords();
 }
 
 PluginProcessor::~PluginProcessor()

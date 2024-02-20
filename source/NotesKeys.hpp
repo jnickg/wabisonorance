@@ -1,12 +1,13 @@
 #pragma once
 
 #include <algorithm>
-#include <cstdint>
 #include <array>
-#include <tuple>
-#include <string>
-#include <vector>
+#include <cstdint>
+#include <mutex>
 #include <stdexcept>
+#include <string>
+#include <tuple>
+#include <vector>
 
 namespace jnickg::audio {
 
@@ -58,6 +59,10 @@ struct note_info {
 
     inline bool operator==(const note_info& other) const {
         return to_midi() == other.to_midi();
+    }
+
+    inline bool operator<(const note_info& other) const {
+        return to_midi() < other.to_midi();
     }
 
     std::string to_string() const {
@@ -379,20 +384,24 @@ inline std::vector<int> get_intervals(chord c) {
 }
 
 enum class inversion {
-    none = 0,
+    __FIRST = 0,
+    root = __FIRST,
     first = 1,
     second = 2,
     third = 3,
-    fourth = 4
+    fourth = 4,
+    __COUNT
 };
 
 inline std::string to_string(inversion inv) {
     switch (inv) {
-        case inversion::none: return "";
+        case inversion::root: return "";
         case inversion::first: return "inv";
         case inversion::second: return "2nd inv";
         case inversion::third: return "3rd inv";
         case inversion::fourth: return "4th inv";
+        case inversion::__COUNT:
+        default: throw std::runtime_error("Invalid inversion");
     }
 }
 
@@ -451,7 +460,7 @@ inline std::vector<int> invert(std::vector<int> chord, inversion inv) {
 struct chord_info {
     note_info root { note::C, 4 };
     chord chord_type { chord::_maj };
-    inversion inv { inversion::none };
+    inversion inv { inversion::root };
 
     std::vector<int> get_midi_notes() const {
         std::vector<int> notes;
@@ -501,6 +510,24 @@ struct chord_info {
     inline bool operator==(const chord_info& other) const {
         return this->is_equal(other);
     }
+
+    inline bool operator<(const chord_info& other) const {
+        if (this->root != other.root) {
+            return this->root < other.root;
+        }
+        if (!this->has_same_notes(other)) {
+            auto this_notes = this->get_midi_notes();
+            auto other_notes = other.get_midi_notes();
+            return std::lexicographical_compare(this_notes.begin(), this_notes.end(), other_notes.begin(), other_notes.end());
+        }
+        if (this->chord_type != other.chord_type) {
+            return this->chord_type < other.chord_type;
+        }
+        return this->inv < other.inv;
+    }
 };
+
+void init_chords();
+std::vector<chord_info> get_chords(note_info root, bool include_inversions = false);
 
 } // namespace jnickg::audio
