@@ -1,21 +1,24 @@
 #include "WabiSonoranceSynth.hpp"
 
+#include "NotesKeys.hpp"
+
 #include <algorithm>
 
 namespace jnickg::audio::ws {
 
 void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSound* sound, int currentPitchWheelPosition) {
-    juce::ignoreUnused(midiNoteNumber);
-    juce::ignoreUnused(velocity);
-    juce::ignoreUnused(sound);
-    juce::ignoreUnused(currentPitchWheelPosition);
+    auto* s = dynamic_cast<Sound*>(sound);
+    if (s == nullptr) {
+        return;
+    }
 
     auto base = juce::MidiMessage::getMidiNoteInHertz(midiNoteNumber);
-    auto bend = this->pitch_wheel_pos_to_semitones(currentPitchWheelPosition);
+    auto bend = this->pitch_wheel_pos_to_bend_factor(currentPitchWheelPosition);
     this->update_pitch(base, bend);
 
     auto params = this->adsr.getParameters();
-    params.attack = 0.1f * (1.0f - velocity);
+    params.attack = velocity_to_attack(velocity);
+    params.release = params.attack;
     this->adsr.setParameters(params);
 
     this->adsr.noteOn();
@@ -26,16 +29,12 @@ void Voice::stopNote (float velocity, bool allowTailOff) {
     juce::ignoreUnused(velocity);
     juce::ignoreUnused(allowTailOff);
 
-    auto params = this->adsr.getParameters();
-    params.release = 0.1f * (1.0f - velocity);
-    this->adsr.setParameters(params);
-
     this->adsr.noteOff();
     this->isActive = false;
 }
 
 void Voice::pitchWheelMoved (int newPitchWheelValue) {
-    auto bend = this->pitch_wheel_pos_to_semitones(newPitchWheelValue);
+    auto bend = this->pitch_wheel_pos_to_bend_factor(newPitchWheelValue);
     this->update_pitch(std::nullopt, bend);
 }
 
@@ -79,10 +78,10 @@ void Voice::prepareToPlay(double sampleRate, int samplesPerBlock, int outputChan
 
     this->adsr.setSampleRate(sampleRate);
     juce::ADSR::Parameters params;
-    params.attack = 0.1f;
-    params.decay = 0.1f;
-    params.sustain = 0.8f;
-    params.release = 0.1f;
+    params.attack = DEFAULT_ATTACK;
+    params.decay = DEFAULT_DECAY;
+    params.sustain = DEFAULT_SUSTAIN;
+    params.release = DEFAULT_RELEASE;
     this->adsr.setParameters(params);
 
     //
