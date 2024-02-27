@@ -16,10 +16,10 @@ void init_chords() {
                 note_info root { static_cast<jnickg::audio::note>(note), octave };
                 chords[root] = std::vector<chord_info>();
 
-                for (int c_idx = static_cast<int>(chord::__FIRST); c_idx <= static_cast<int>(chord::__COUNT); ++c_idx) {
+                for (int c_idx = static_cast<int>(chord::__FIRST); c_idx < static_cast<int>(chord::__COUNT); ++c_idx) {
                     chord c = static_cast<chord>(c_idx);
 
-                    for (int inv_idx = static_cast<int>(inversion::__FIRST); inv_idx <= static_cast<int>(inversion::__COUNT); ++inv_idx) {
+                    for (int inv_idx = static_cast<int>(inversion::__FIRST); inv_idx < static_cast<int>(inversion::__COUNT); ++inv_idx) {
                         inversion inv = static_cast<inversion>(inv_idx);
 
                         auto& new_chord = chords.at(root).emplace_back();

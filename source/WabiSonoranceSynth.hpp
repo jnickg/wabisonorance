@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <memory>
 
+#include "NotesKeys.hpp"
+
 namespace jnickg::audio::ws {
 
 /**
@@ -62,7 +64,7 @@ public:
         int startSample,
         int numSamples) override;
 
-    void prepareToPlay(double sampleRate, int samplesPerBlock, int outputChannels);
+    void prepareToPlay(double sampleRate, int samplesPerBlock, int outputChannels, float bpm);
 
 private:
     using osc_t = juce::dsp::Oscillator<float>;
@@ -74,46 +76,69 @@ private:
         Triangle
     };
 
-    OscillatorType selected_osc { OscillatorType::Sine };
+    OscillatorType selected_osc { OscillatorType::Triangle };
 
     float clip { 0.6f }; ///< Pre-gain clipping value for the waveform.
 
-    float sine_wave(float t) {
+    float sine_wave(float t) const{
         auto val = std::sin(t);
         return std::clamp(val, -clip, clip);
     }
 
-    float saw_wave(float t) {
+    float saw_wave(float t) const{
         auto val = t / juce::MathConstants<float>::pi;
         return std::clamp(val, -clip, clip);
     }
 
-    float square_wave(float t) {
+    float square_wave(float t) const{
         auto val = t < 0.0f ? -1.0f : 1.0f;
         return std::clamp(val, -clip, clip);
     }
 
-    float triangle_wave(float t) {
+    float triangle_wave(float t) const{
         auto val = 2.0f * std::abs(t - std::round(t)) - 1.0f;
         return std::clamp(val, -clip, clip);
     }
 
-    const size_t NUM_LUT_SAMPLES = 1200;
+    float custom_wave(float t) const {
+        switch(selected_osc) {
+            case OscillatorType::Sine:
+                return this->sine_wave(t);
+            case OscillatorType::Saw:
+                return this->saw_wave(t);
+            case OscillatorType::Square:
+                return this->square_wave(t);
+            case OscillatorType::Triangle:
+                return this->triangle_wave(t);
+            default:
+                return 0.0f;
+        }
+    }
 
-    std::unordered_map<OscillatorType, std::shared_ptr<osc_t>> oscillators = {
-        { OscillatorType::Sine, std::make_shared<osc_t>([this](float t){ return this->sine_wave(t); }, NUM_LUT_SAMPLES)},
-        { OscillatorType::Saw, std::make_shared<osc_t>([this](float t){ return this->saw_wave(t); }, NUM_LUT_SAMPLES)},
-        { OscillatorType::Square, std::make_shared<osc_t>([this](float t){ return this->square_wave(t); }, NUM_LUT_SAMPLES)},
-        { OscillatorType::Triangle, std::make_shared<osc_t>( [this](float t){ return this->triangle_wave(t); }, NUM_LUT_SAMPLES)}
+    std::vector<std::shared_ptr<osc_t>> chord_oscillators = {
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); }),
+        std::make_shared<osc_t>([this](float t){ return this->custom_wave(t); })
     };
+
+    std::vector<double> chord_bases;
+
     juce::dsp::Gain<float> gain;
     juce::ADSR adsr;
     inline static const float DEFAULT_ATTACK { 0.5f };
     inline static const float DEFAULT_DECAY { 0.1f };
     inline static const float DEFAULT_SUSTAIN { 1.0f };
     inline static const float DEFAULT_RELEASE { 0.5f };
-    double pitch_base { 440.0 }; ///< Base pitch in Hz.
     double pitch_bend { 1.0 }; ///< Factor by which to bend the pitch.
+    float _bpm { 120.0f };
 
     bool isPrepared { false };
     bool isActive { false };
@@ -122,16 +147,16 @@ private:
         return this->isActive || this->adsr.isActive();
     }
 
-    void update_pitch(std::optional<double> base = std::nullopt, std::optional<double> bend = std::nullopt) {
-        if (base) {
-            this->pitch_base = *base;
+    void update_pitches(std::optional<std::vector<double>> bases = std::nullopt, std::optional<double> bend = std::nullopt) {
+        if (bases) {
+            this->chord_bases = *bases;
         }
         if (bend) {
             this->pitch_bend = *bend;
         }
-        auto freq = this->pitch_base * this->pitch_bend;
-        for (auto& osc : this->oscillators) {
-            osc.second->setFrequency(static_cast<float>(freq));
+        for (size_t i = 0; i < this->chord_oscillators.size(); ++i) {
+            auto freq = this->chord_bases[i] * this->pitch_bend;
+            this->chord_oscillators[i]->setFrequency(static_cast<float>(freq));
         }
     }
 

@@ -129,6 +129,27 @@ TEST_CASE("jnickg::audio::chord / jnickg::audio::chord_info") {
         }
         REQUIRE(all_chords.size() == 12 * 93 * 5);
 
+        SECTION("get_notes()") {
+            std::vector<std::vector<note_info>> all_chord_notes;
+            for (auto& c : all_chords) {
+                auto ns = c.get_notes();
+                REQUIRE(!ns.empty());
+                all_chord_notes.push_back(ns);
+            }
+            REQUIRE(all_chord_notes.size() == 12 * 93 * 5);
+
+            SECTION("always includes root note") {
+                for (size_t i = 0; i < all_chord_notes.size(); ++i) {
+                    auto& nis = all_chord_notes[i];
+                    auto& chord_root_ni = all_chords[i].root;
+                    auto found = std::find_if(nis.begin(), nis.end(), [&chord_root_ni](const note_info& ni) {
+                        return ni.n == chord_root_ni.n;
+                    });
+                    REQUIRE(found != nis.end());
+                }
+            }
+        }
+
         SECTION("get_midi_notes()") {
             for (auto& c : all_chords) {
                 auto midi_notes = c.get_midi_notes();
@@ -168,6 +189,18 @@ TEST_CASE("jnickg::audio::get_chords(root, include_inversions") {
         }
     }
     REQUIRE(all_notes.size() == 12 * 8);
+
+    SECTION("get_chords(root, include_inversions = false) always includes root note") {
+        for (auto n : all_notes) {
+            auto n_midi = n.to_midi();
+            auto cs = jnickg::audio::get_chords(n, false);
+            REQUIRE(!cs.empty());
+            for (auto& c : cs) {
+                auto ns = c.get_midi_notes();
+                REQUIRE(std::find(ns.begin(), ns.end(), n_midi) != ns.end());
+            }
+        }
+    }
 
     SECTION("get_chords(root, include_inversions = false) returns only root inversions") {
         for (auto n : all_notes) {

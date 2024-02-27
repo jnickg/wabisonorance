@@ -12,9 +12,18 @@ void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSoun
         return;
     }
 
-    auto base = juce::MidiMessage::getMidiNoteInHertz(midiNoteNumber);
+    jnickg::audio::chord_info current_chord;
+    current_chord.root.from_midi(midiNoteNumber);
+    current_chord.randomize_chord_type();
+    current_chord.randomize_inversion();
+    auto midi_notes = current_chord.get_midi_notes();
+
+    std::vector<double> new_bases;
+    for (auto note : midi_notes) {
+        new_bases.push_back(juce::MidiMessage::getMidiNoteInHertz(note));
+    }
     auto bend = this->pitch_wheel_pos_to_bend_factor(currentPitchWheelPosition);
-    this->update_pitch(base, bend);
+    this->update_pitches(new_bases, bend);
 
     auto params = this->adsr.getParameters();
     params.attack = velocity_to_attack(velocity);
@@ -35,7 +44,7 @@ void Voice::stopNote (float velocity, bool allowTailOff) {
 
 void Voice::pitchWheelMoved (int newPitchWheelValue) {
     auto bend = this->pitch_wheel_pos_to_bend_factor(newPitchWheelValue);
-    this->update_pitch(std::nullopt, bend);
+    this->update_pitches(std::nullopt, bend);
 }
 
 void Voice::controllerMoved (int controllerNumber, int newControllerValue) {
@@ -55,25 +64,23 @@ void Voice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int startSa
     }
 
     for (int sample = startSample; sample < startSample + numSamples; ++sample) {
-        auto osc_sample = this->oscillators[selected_osc]->processSample(0.0f);
-        osc_sample *= this->adsr.getNextSample();
-        osc_sample *= this->gain.getGainLinear();
-        outputBuffer.addSample(0, sample, osc_sample);
-
-        // TODO use 5 total oscillators, set to the pitches of the notes in a randomly chosen
-        // chord, then add them here.
+        for (size_t i = 0; i < this->chord_bases.size(); ++i) {
+            auto osc_sample = this->chord_oscillators[i]->processSample(0.0f);
+            osc_sample *= this->adsr.getNextSample();
+            osc_sample *= this->gain.getGainLinear();
+            outputBuffer.addSample(0, sample, osc_sample);
+        }
     }
-
 }
 
-void Voice::prepareToPlay(double sampleRate, int samplesPerBlock, int outputChannels) {
+void Voice::prepareToPlay(double sampleRate, int samplesPerBlock, int outputChannels, float bpm) {
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
     spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
     spec.numChannels = static_cast<juce::uint32>(outputChannels);
 
-    for (auto& osc : this->oscillators) {
-        osc.second->prepare(spec);
+    for (auto& osc : this->chord_oscillators) {
+        osc->prepare(spec);
     }
 
     this->gain.prepare(spec);
@@ -86,6 +93,8 @@ void Voice::prepareToPlay(double sampleRate, int samplesPerBlock, int outputChan
     params.sustain = DEFAULT_SUSTAIN;
     params.release = DEFAULT_RELEASE;
     this->adsr.setParameters(params);
+
+    this->_bpm = bpm;
 
     //
     //

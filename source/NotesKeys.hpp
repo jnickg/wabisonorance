@@ -509,6 +509,16 @@ struct chord_info {
         return notes;
     }
 
+    inline void randomize_chord_type() {
+        int idx = rand() % static_cast<int>(chord::__COUNT);
+        this->chord_type = static_cast<chord>(idx);
+    }
+
+    inline void randomize_inversion() {
+        int idx = rand() % static_cast<int>(inversion::__COUNT);
+        this->inv = static_cast<inversion>(idx);
+    }
+
     std::vector<note_info> get_notes() const {
         auto midi_notes = this->get_midi_notes();
         std::vector<note_info> notes;

@@ -100,12 +100,14 @@ void PluginProcessor::changeProgramName (int index, const juce::String& newName)
 void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     this->synth.setCurrentPlaybackSampleRate(sampleRate);
+
+    float bpm = 120.0f;
     
     auto outputChannels = this->getTotalNumOutputChannels();
     for (auto i = 0; i < this->synth.getNumVoices(); ++i) {
         auto* voice = dynamic_cast<jnickg::audio::ws::Voice*>(this->synth.getVoice(i));
         if (voice != nullptr) {
-            voice->prepareToPlay(sampleRate, samplesPerBlock, outputChannels);
+            voice->prepareToPlay(sampleRate, samplesPerBlock, outputChannels, bpm);
         }
     }
 }
