@@ -540,8 +540,17 @@ struct chord_info {
         return std::find(notes.begin(), notes.end(), n) != notes.end();
     }
 
-    std::string to_string() const {
-        return std::string(); // TODO
+    std::string to_string(bool verbose = false) const {
+        auto str = this->root.to_string() + " " + ::jnickg::audio::to_string(this->chord_type) + " " + ::jnickg::audio::to_string(this->inv);
+        if (verbose) {
+            auto notes = this->get_notes();
+            str += " [";
+            for (auto& n : notes) {
+                str += n.to_string() + " ";
+            }
+            str += "]";
+        }
+        return str;
     }
 
     inline bool has_same_notes(const chord_info& other) const {
