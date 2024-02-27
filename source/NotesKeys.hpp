@@ -12,7 +12,8 @@
 namespace jnickg::audio {
 
 enum class note : uint8_t {
-    C = 0,
+    __FIRST = 0,
+    C = __FIRST,
 
     Csharp = 1,
     Db = 1,
@@ -39,8 +40,41 @@ enum class note : uint8_t {
     Asharp = 10,
     Bb = 10,
 
-    B = 11
+    B = 11,
+
+    __COUNT
 };
+
+inline std::string to_string(note n) {
+    std::string note_str;
+    switch (n) {
+        case note::C: note_str = "C"; break;
+        case note::Csharp: note_str = "C#"; break;
+        case note::D: note_str = "D"; break;
+        case note::Dsharp: note_str = "D#"; break;
+        case note::E: note_str = "E"; break;
+        case note::F: note_str = "F"; break;
+        case note::Fsharp: note_str = "F#"; break;
+        case note::G: note_str = "G"; break;
+        case note::Gsharp: note_str = "G#"; break;
+        case note::A: note_str = "A"; break;
+        case note::Asharp: note_str = "A#"; break;
+        case note::B: note_str = "B"; break;
+        case note::__COUNT:
+        default:
+            throw std::runtime_error("Invalid note");
+    }
+    return note_str;
+}
+
+
+inline std::vector<note> get_notes() {
+    std::vector<note> notes;
+    for (int i = 0; i < static_cast<int>(note::__COUNT); i++) {
+        notes.push_back(static_cast<note>(i));
+    }
+    return notes;
+}
 
 struct note_info {
     note n { note::C };
@@ -66,22 +100,7 @@ struct note_info {
     }
 
     std::string to_string() const {
-        std::string note_str;
-        switch (this->n) {
-            case note::C: note_str = "C"; break;
-            case note::Csharp: note_str = "C#"; break;
-            case note::D: note_str = "D"; break;
-            case note::Dsharp: note_str = "D#"; break;
-            case note::E: note_str = "E"; break;
-            case note::F: note_str = "F"; break;
-            case note::Fsharp: note_str = "F#"; break;
-            case note::G: note_str = "G"; break;
-            case note::Gsharp: note_str = "G#"; break;
-            case note::A: note_str = "A"; break;
-            case note::Asharp: note_str = "A#"; break;
-            case note::B: note_str = "B"; break;
-        }
-        return note_str + std::to_string(this->octave);
+        return ::jnickg::audio::to_string(this->n) + std::to_string(this->octave);
     }
 };
 
@@ -182,6 +201,14 @@ enum class chord {
     _dom13,
     __COUNT
 };
+
+inline std::vector<chord> get_chords() {
+    std::vector<chord> chords;
+    for (int i = 0; i < static_cast<int>(chord::__COUNT); i++) {
+        chords.push_back(static_cast<chord>(i));
+    }
+    return chords;
+}
 
 inline std::string to_string(chord c) {
     switch (c) {
@@ -386,12 +413,20 @@ inline std::vector<int> get_intervals(chord c) {
 enum class inversion {
     __FIRST = 0,
     root = __FIRST,
-    first = 1,
-    second = 2,
-    third = 3,
-    fourth = 4,
+    first,
+    second,
+    third,
+    fourth,
     __COUNT
 };
+
+inline std::vector<inversion> get_inversions() {
+    std::vector<inversion> inversions;
+    for (int i = 0; i < static_cast<int>(inversion::__COUNT); i++) {
+        inversions.push_back(static_cast<inversion>(i));
+    }
+    return inversions;
+}
 
 inline std::string to_string(inversion inv) {
     switch (inv) {
@@ -449,6 +484,8 @@ inline std::vector<int> invert_quint(std::vector<int> chord, inversion inv) {
 
 inline std::vector<int> invert(std::vector<int> chord, inversion inv) {
     switch (chord.size()) {
+        case 0: return chord;
+        case 1: return chord;
         case 2: return invert_dyad(chord, inv);
         case 3: return invert_triad(chord, inv);
         case 4: return invert_quad(chord, inv);

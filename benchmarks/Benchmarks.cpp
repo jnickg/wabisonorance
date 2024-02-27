@@ -2,7 +2,7 @@
 #include "catch2/benchmark/catch_benchmark_all.hpp"
 #include "catch2/catch_test_macros.hpp"
 
-TEST_CASE ("Boot performance")
+TEST_CASE ("Boot performance", "[!benchmark]")
 {
     BENCHMARK_ADVANCED ("Processor constructor")
     (Catch::Benchmark::Chronometer meter)
