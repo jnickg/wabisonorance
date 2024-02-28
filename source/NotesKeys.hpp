@@ -80,14 +80,27 @@ struct note_info {
     note n { note::C };
     int octave { 4 };
 
+    note_info() = default;
+
+    note_info(note nval) : n(nval) { }
+
+    note_info(note nval, int oval) : n(nval), octave(oval) { }
+
+    explicit note_info(int midi) {
+        this->from_midi(midi);
+    }
+
     int to_midi() const {
         return static_cast<int>(this->n) + (12 * this->octave);
     }
 
-    static note_info from_midi(int midi) {
-        note_info info;
-        info.n = static_cast<note>(midi % 12);
-        info.octave = midi / 12;
+    inline void from_midi(int midi) {
+        this->n = static_cast<note>(midi % 12);
+        this->octave = midi / 12;
+    }
+
+    static note_info create_from_midi(int midi) {
+        note_info info(midi);
         return info;
     }
 
@@ -101,6 +114,21 @@ struct note_info {
 
     std::string to_string() const {
         return ::jnickg::audio::to_string(this->n) + std::to_string(this->octave);
+    }
+
+    inline note_info& operator=(const int& midi_key) {
+        this->from_midi(midi_key);
+        return *this;
+    }
+
+    inline note_info& operator+(const int& semitones) {
+        int midi = this->to_midi() + semitones;
+        this->from_midi(midi);
+        return *this;
+    }
+
+    inline int get_interval(const note_info& other) const {
+        return other.to_midi() - this->to_midi();
     }
 };
 
@@ -523,7 +551,7 @@ struct chord_info {
         auto midi_notes = this->get_midi_notes();
         std::vector<note_info> notes;
         std::transform(midi_notes.begin(), midi_notes.end(), std::back_inserter(notes), [](int midi) {
-            return note_info::from_midi(midi);
+            return note_info(midi);
         });
         return notes;
     }
@@ -585,5 +613,172 @@ struct chord_info {
 
 void init_chords();
 std::vector<chord_info> get_chords(note_info root, bool include_inversions = false);
+
+inline std::string get_perfect_interval(int semitones) {
+    switch (semitones) {
+        case 0: return "Perfect unison";
+        case 1: return "Minor second";
+        case 2: return "Major second";
+        case 3: return "Minor third";
+        case 4: return "Major third";
+        case 5: return "Perfect fourth";
+        case 6: return "Tritone"; // Not a perfect interval
+        case 7: return "Perfect fifth";
+        case 8: return "Minor sixth";
+        case 9: return "Major sixth";
+        case 10: return "Minor seventh";
+        case 11: return "Major seventh";
+        case 12: return "Perfect octave";
+        case 13: return "Minor ninth";
+        case 14: return "Major ninth";
+        case 15: return "Minor tenth";
+        case 16: return "Major tenth";
+        case 17: return "Perfect eleventh";
+        case 18: return "N/A"; // Not a perfect interval
+        case 19: return "Perfect twelfth"; // AKA tritave
+        case 20: return "Minor thirteenth";
+        case 21: return "Major thirteenth";
+        case 22: return "Minor fourteenth";
+        case 23: return "Major fourteenth";
+        case 24: return "Perfect double octave"; // AKA fifteenth
+        case 25: return "N/A"; // Not a perfect interval
+        default: throw std::runtime_error("Invalid interval");
+    }
+}
+
+inline std::string get_AD_interval(int semitones) {
+    switch (semitones) {
+        case 0: return "Diminished second";
+        case 1: return "Augmented unison";
+        case 2: return "Diminished third";
+        case 3: return "Augmented second";
+        case 4: return "Diminished fourth";
+        case 5: return "Augmented third";
+        case 6: return "Tritone"; // Diminished fifth OR augmented fourth
+        case 7: return "Diminished sixth";
+        case 8: return "Augmented fifth";
+        case 9: return "Diminished seventh";
+        case 10: return "Augmented sixth";
+        case 11: return "Diminished octave";
+        case 12: return "Augmented seventh"; // or diminished ninth
+        case 13: return "Augmented octave";
+        case 14: return "Diminished tenth";
+        case 15: return "Augmented ninth";
+        case 16: return "Diminished eleventh";
+        case 17: return "Augmented tenth";
+        case 18: return "N/A"; // Diminished twelfth OR augmented eleventh
+        case 19: return "Diminished thirteenth";
+        case 20: return "Augmented twelfth";
+        case 21: return "Diminished fourteenth";
+        case 22: return "Augmented thirteenth";
+        case 23: return "Diminished fifteenth";
+        case 24: return "Augmented fourteenth";
+        case 25: return "Augmented fifteenth";
+        default: throw std::runtime_error("Invalid interval");
+    }
+}
+
+/**
+ * @brief Gets the name of an interval from the given base note
+ * 
+ * Depending on the number of staff positions between the two notes, the interval
+ * will be named differently. For example, a note that is 3 staff positions above
+ * the base note is a third, and a note that is 4 staff positions above the base
+ * note is a fourth.
+ */
+inline std::string get_interval(note n, int semitones) {
+    (void)semitones;
+    switch (n) {
+        case note::C:
+        case note::Csharp:
+        case note::D:
+        case note::Dsharp:
+        case note::E:
+        case note::F:
+        case note::Fsharp:
+        case note::G:
+        case note::Gsharp:
+        case note::A:
+        case note::Asharp:
+        case note::B:
+            throw std::runtime_error("Not yet implemented");
+        case note::__COUNT:
+        default: throw std::runtime_error("Invalid note");
+    }
+}
+
+enum class scale {
+    __FIRST = 0,
+    major = __FIRST,
+    minor,
+    dorian,
+    phrygian,
+    lydian,
+    mixolydian,
+    locrian,
+    harmonic_minor,
+    melodic_minor,
+    persian,
+    hirajoshi,
+    insen,
+    iwato,
+    yo,
+    yonanuki,
+    algerian,
+    blues,
+    __COUNT
+};
+
+inline std::string to_string(scale s) {
+    switch (s) {
+        case scale::major: return "Major";
+        case scale::minor: return "Minor";
+        case scale::dorian: return "Dorian";
+        case scale::phrygian: return "Phrygian";
+        case scale::lydian: return "Lydian";
+        case scale::mixolydian: return "Mixolydian";
+        case scale::locrian: return "Locrian";
+        case scale::harmonic_minor: return "Harmonic Minor";
+        case scale::melodic_minor: return "Melodic Minor";
+        case scale::persian: return "Persian";
+        case scale::hirajoshi: return "Hirajoshi";
+        case scale::insen: return "Insen";
+        case scale::iwato: return "Iwato";
+        case scale::yo: return "Yo";
+        case scale::yonanuki: return "Yonanuki";
+        case scale::algerian: return "Algerian";
+        case scale::blues: return "Blues";
+        case scale::__COUNT:
+        default: throw std::runtime_error("Invalid scale");
+    }
+}
+
+inline std::vector<int> get_intervals(scale s) {
+    switch (s) {
+        case scale::major: return { 0,2,4,5,7,9,11 };
+        case scale::minor: return { 0,2,3,5,7,8,10 };
+        case scale::dorian: return { 0,2,3,5,7,9,10 };
+        case scale::phrygian: return { 0,1,3,5,7,8,10 };
+        case scale::lydian: return { 0,2,4,6,7,9,11 };
+        case scale::mixolydian: return { 0,2,4,5,7,9,10 };
+        case scale::locrian: return { 0,1,3,5,6,8,10 };
+        case scale::harmonic_minor: return { 0,2,3,5,7,8,11 };
+        case scale::melodic_minor: return { 0,2,3,5,7,9,11 };
+        case scale::persian: return { 0,1,4,5,6,8,11 };
+        case scale::hirajoshi: return { 0,4,6,7,11 };
+        case scale::insen: return { 0,1,5,7,10 };
+        case scale::iwato: return { 0,1,5,6,10 };
+        case scale::yo: return { 0,3,5,7,10 };
+        case scale::yonanuki: return { 0,2,3,7,8 };
+        case scale::algerian: return { 0,2,3,6,7,9,11,12,14,15,17 };
+        case scale::blues: return { 0,3,5,6,7,10 };
+        case scale::__COUNT:
+        default: throw std::runtime_error("Invalid scale");
+    }
+}
+
+inline size_t get_scale_size(scale s) {
+    return get_intervals(s).size();
+}
 
 } // namespace jnickg::audio

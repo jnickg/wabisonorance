@@ -13,7 +13,7 @@ void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSoun
     }
 
     jnickg::audio::chord_info current_chord;
-    current_chord.root = jnickg::audio::note_info::from_midi(midiNoteNumber);
+    current_chord.root.from_midi(midiNoteNumber);
     current_chord.randomize_chord_type();
     current_chord.randomize_inversion();
     auto chord_str = current_chord.to_string(true);

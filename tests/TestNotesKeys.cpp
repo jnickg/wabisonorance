@@ -24,18 +24,14 @@ TEST_CASE("jnickg::audio::note / jnickg::audio::note_info") {
 
     SECTION("note_info can be constructed using note") {
         for (auto note : notes) {
-            note_info i {
-                .n = note
-            };
+            note_info i(note);
             REQUIRE(i.n == note);
         }
     }
 
     SECTION("note_info::to_string() returns a non-empty string") {
         for (auto note : notes) {
-            note_info i {
-                .n = note
-            };
+            note_info i(note);
             auto s = i.to_string();
             REQUIRE(!s.empty());
         }
@@ -43,9 +39,7 @@ TEST_CASE("jnickg::audio::note / jnickg::audio::note_info") {
 
     SECTION("note_info::to_string() contains ::jnickg::audio::to_string(note)") {
         for (auto note : notes) {
-            note_info i {
-                .n = note
-            };
+            note_info i(note);
             auto s = i.to_string();
             REQUIRE(s.find(::jnickg::audio::to_string(note)) != std::string::npos);
         }
@@ -53,9 +47,7 @@ TEST_CASE("jnickg::audio::note / jnickg::audio::note_info") {
 
     SECTION("note_info::to_midi() returns a valid MIDI note number") {
         for (auto note : notes) {
-            note_info i {
-                .n = note
-            };
+            note_info i(note);
             auto midi = i.to_midi();
             REQUIRE(midi >= 0);
             REQUIRE(midi <= 127);
@@ -116,9 +108,7 @@ TEST_CASE("jnickg::audio::chord / jnickg::audio::chord_info") {
             for (auto chord : chords) {
                 for (auto inv : inversions) {
                     auto& c = all_chords.emplace_back();
-                    c.root = {
-                        .n = note
-                    };
+                    c.root.n = note;
                     c.chord_type = chord;
                     c.inv = inv;
                     REQUIRE(c.root.n == note);
