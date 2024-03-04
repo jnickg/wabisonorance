@@ -132,6 +132,11 @@ struct note_info {
     }
 };
 
+/**
+ * @brief Every common chord that can be played using the standard 12-tone scale
+ * 
+ * @note Values begin with underscore because some chord names begin with numbers
+ */
 enum class chord {
     __FIRST = 0,
     _unison = __FIRST,
@@ -780,5 +785,34 @@ inline std::vector<int> get_intervals(scale s) {
 inline size_t get_scale_size(scale s) {
     return get_intervals(s).size();
 }
+
+struct key_info {
+    note root { note::C };
+    scale scale_type { scale::major };
+
+    inline std::vector<note> key_notes() const {
+        std::vector<note> notes;
+        note_info tonic(this->root, 4);
+        auto intervals = get_intervals(this->scale_type);
+        std::transform(intervals.begin(), intervals.end(), std::back_inserter(notes), [this, tonic](int interval) {
+            return note_info(tonic.to_midi() + interval).n;
+        });
+        return notes;
+    }
+
+    inline bool contains_all_chord_notes(const chord_info& c) {
+        auto notes = c.get_notes();
+        auto scale_notes = this->key_notes();
+        return std::all_of(notes.begin(), notes.end(), [scale_notes](note_info n) {
+            return std::find(scale_notes.begin(), scale_notes.end(), n.n) != scale_notes.end();
+        });
+    }
+
+    inline bool contains_chord_root(const chord_info& c) {
+        auto chord_root = c.root.n;
+        auto scale_notes = this->key_notes();
+        return std::find(scale_notes.begin(), scale_notes.end(), chord_root) != scale_notes.end();
+    }
+};
 
 } // namespace jnickg::audio
