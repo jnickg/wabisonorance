@@ -48,4 +48,20 @@ std::vector<chord_info> get_chords(note_info root, bool include_inversions) {
     return result;
 }
 
+std::vector<chord_info> get_chords(key_info key, bool include_inversions) {
+    std::vector<chord_info> result;
+    for (auto& [root, cs] : chords) {
+        for (auto& c : cs) {
+            if (!chord_fits_key(c, key)) {
+                continue;
+            }
+            if (!include_inversions && c.inv != inversion::root) {
+                continue;
+            }
+            result.push_back(c);
+        }
+    }
+    return result;
+}
+
 } // namespace jnickg::audio

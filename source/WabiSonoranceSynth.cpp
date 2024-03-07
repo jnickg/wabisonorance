@@ -12,12 +12,29 @@ void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSoun
         return;
     }
 
-    jnickg::audio::chord_info current_chord;
-    current_chord.root.from_midi(midiNoteNumber);
-    current_chord.randomize_chord_type();
-    current_chord.randomize_inversion();
+    jnickg::audio::key_info key {
+        .root = jnickg::audio::note::A,
+        .scale_type = jnickg::audio::scale::minor,
+    };
+
+    note_info n(midiNoteNumber);
+
+    auto chords_in_key = get_chords(key, true);
+    // Get the subset of chords_in_key where the chord actually contains the note being played
+    // chords_in_key.erase(
+    //     std::remove_if(
+    //         chords_in_key.begin(),
+    //         chords_in_key.end(),
+    //         [&n](const chord_info& c) {
+    //             return std::find(c.get_midi_notes().begin(), c.get_midi_notes().end(), n.to_midi()) == c.get_midi_notes().end();
+    //         }
+    //     ),
+    //     chords_in_key.end()
+    // );
+    auto idx = static_cast<size_t>(std::rand() % static_cast<int>(chords_in_key.size()));
+    jnickg::audio::chord_info& current_chord = chords_in_key[idx];
     auto chord_str = current_chord.to_string(true);
-    printf("Playing chord: %s\n", chord_str.c_str());
+    printf("Note %s -> Playing chord: %s\n", n.to_string().c_str(), chord_str.c_str());
     auto midi_notes = current_chord.get_midi_notes();
 
     std::vector<double> new_bases;

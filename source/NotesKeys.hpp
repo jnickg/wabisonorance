@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <mutex>
 #include <stdexcept>
@@ -91,12 +92,12 @@ struct note_info {
     }
 
     int to_midi() const {
-        return static_cast<int>(this->n) + (12 * this->octave);
+        return static_cast<int>(this->n) + (12 * (this->octave + 1));
     }
 
     inline void from_midi(int midi) {
         this->n = static_cast<note>(midi % 12);
-        this->octave = midi / 12;
+        this->octave = (midi / 12) - 1;
     }
 
     static note_info create_from_midi(int midi) {
@@ -121,16 +122,18 @@ struct note_info {
         return *this;
     }
 
-    inline note_info& operator+(const int& semitones) {
-        int midi = this->to_midi() + semitones;
-        this->from_midi(midi);
-        return *this;
-    }
-
     inline int get_interval(const note_info& other) const {
         return other.to_midi() - this->to_midi();
     }
+
+    inline double get_frequency() const {
+        return 440.0 * std::pow(2.0, (this->to_midi() - 69) / 12.0);
+    }
 };
+
+inline note_info operator+(const note_info& n, int interval) {
+    return note_info(n.to_midi() + interval);
+}
 
 /**
  * @brief Every common chord that can be played using the standard 12-tone scale
@@ -537,22 +540,28 @@ struct chord_info {
         auto intervals = get_intervals(this->chord_type);
         intervals = invert(intervals, this->inv);
         for (auto interval : intervals) {
-            notes.push_back(static_cast<int>(this->root.n) + interval + (12 * this->root.octave));
+            note_info n = this->root + interval;
+            notes.push_back(n.to_midi());
         }
         return notes;
     }
 
-    inline void randomize_chord_type() {
-        int idx = rand() % static_cast<int>(chord::__COUNT);
-        this->chord_type = static_cast<chord>(idx);
-    }
+    inline void randomize() {
+        int idx = rand() % static_cast<int>(note::__COUNT);
+        this->root.n = static_cast<note>(idx);
 
-    inline void randomize_inversion() {
-        int idx = rand() % static_cast<int>(inversion::__COUNT);
+        idx = rand() % static_cast<int>(chord::__COUNT);
+        this->chord_type = static_cast<chord>(idx);
+
+        auto intervals = get_intervals(this->chord_type);
+
+        idx = rand() % (static_cast<int>(intervals.size()) - 1);
         this->inv = static_cast<inversion>(idx);
     }
 
     std::vector<note_info> get_notes() const {
+        // This should probably have the logic for intervals, then we transform note_info.to_midi
+        // for get_midi_notes. Not worth the time to refactor right now.
         auto midi_notes = this->get_midi_notes();
         std::vector<note_info> notes;
         std::transform(midi_notes.begin(), midi_notes.end(), std::back_inserter(notes), [](int midi) {
@@ -790,17 +799,19 @@ struct key_info {
     note root { note::C };
     scale scale_type { scale::major };
 
-    inline std::vector<note> key_notes() const {
-        std::vector<note> notes;
-        note_info tonic(this->root, 4);
+    inline std::vector<note_info> key_notes(int octave = 4) const {
+        std::vector<note_info> notes;
+        note_info tonic(this->root, octave);
         auto intervals = get_intervals(this->scale_type);
-        std::transform(intervals.begin(), intervals.end(), std::back_inserter(notes), [this, tonic](int interval) {
-            return note_info(tonic.to_midi() + interval).n;
+        auto tonic_midi = tonic.to_midi();
+        std::transform(intervals.begin(), intervals.end(), std::back_inserter(notes), [tonic, tonic_midi](int interval) {
+            note_info n(tonic_midi + interval);
+            return note_info(tonic.to_midi() + interval);
         });
         return notes;
     }
 
-    inline bool contains_all_chord_notes(const chord_info& c) {
+    inline bool contains_all_chord_notes(const chord_info& c) const {
         auto notes = c.get_notes();
         auto scale_notes = this->key_notes();
         return std::all_of(notes.begin(), notes.end(), [scale_notes](note_info n) {
@@ -808,11 +819,21 @@ struct key_info {
         });
     }
 
-    inline bool contains_chord_root(const chord_info& c) {
+    inline bool contains_chord_root(const chord_info& c) const {
         auto chord_root = c.root.n;
         auto scale_notes = this->key_notes();
         return std::find(scale_notes.begin(), scale_notes.end(), chord_root) != scale_notes.end();
     }
+
+    inline std::string to_string() const {
+        return ::jnickg::audio::to_string(this->root) + " " + ::jnickg::audio::to_string(this->scale_type);
+    }
 };
+
+inline bool chord_fits_key(const chord_info& c, const key_info& k) {
+    return k.contains_all_chord_notes(c) && k.contains_chord_root(c);
+}
+
+std::vector<chord_info> get_chords(key_info key, bool include_inversions = false);
 
 } // namespace jnickg::audio
