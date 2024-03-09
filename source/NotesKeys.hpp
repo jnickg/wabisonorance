@@ -109,6 +109,10 @@ struct note_info {
         return to_midi() == other.to_midi();
     }
 
+    inline bool operator==(const note& note) const {
+        return this->n == note;
+    }
+
     inline bool operator<(const note_info& other) const {
         return to_midi() < other.to_midi();
     }
@@ -348,7 +352,7 @@ inline std::string to_string(chord c) {
 
 inline std::vector<int> get_intervals(chord c) {
     switch (c) {
-        case chord::_unison               : return { 0,0 };
+        case chord::_unison               : return { 0 };
         case chord::_b2                   : return { 0,1 };
         case chord::_2                    : return { 0,2 };
         case chord::_b3                   : return { 0,3 };
@@ -528,6 +532,11 @@ inline std::vector<int> invert(std::vector<int> chord, inversion inv) {
         case 5: return invert_quint(chord, inv);
         default: throw std::runtime_error("Invalid chord size");
     }
+}
+
+inline bool can_invert(chord c, inversion inv) {
+    auto intervals = get_intervals(c);
+    return intervals.size() > static_cast<size_t>(inv);
 }
 
 struct chord_info {
@@ -738,7 +747,6 @@ enum class scale {
     iwato,
     yo,
     yonanuki,
-    algerian,
     blues,
     __COUNT
 };
@@ -760,7 +768,6 @@ inline std::string to_string(scale s) {
         case scale::iwato: return "Iwato";
         case scale::yo: return "Yo";
         case scale::yonanuki: return "Yonanuki";
-        case scale::algerian: return "Algerian";
         case scale::blues: return "Blues";
         case scale::__COUNT:
         default: throw std::runtime_error("Invalid scale");
@@ -784,7 +791,6 @@ inline std::vector<int> get_intervals(scale s) {
         case scale::iwato: return { 0,1,5,6,10 };
         case scale::yo: return { 0,3,5,7,10 };
         case scale::yonanuki: return { 0,2,3,7,8 };
-        case scale::algerian: return { 0,2,3,6,7,9,11,12,14,15,17 };
         case scale::blues: return { 0,3,5,6,7,10 };
         case scale::__COUNT:
         default: throw std::runtime_error("Invalid scale");
@@ -811,6 +817,15 @@ struct key_info {
         return notes;
     }
 
+    inline std::vector<note> notes() const {
+        std::vector<note> notes;
+        auto scale_notes = this->key_notes();
+        std::transform(scale_notes.begin(), scale_notes.end(), std::back_inserter(notes), [](note_info n) {
+            return n.n;
+        });
+        return notes;
+    }
+
     inline bool contains_all_chord_notes(const chord_info& c) const {
         auto notes = c.get_notes();
         auto scale_notes = this->key_notes();
@@ -820,20 +835,53 @@ struct key_info {
     }
 
     inline bool contains_chord_root(const chord_info& c) const {
-        auto chord_root = c.root.n;
-        auto scale_notes = this->key_notes();
-        return std::find(scale_notes.begin(), scale_notes.end(), chord_root) != scale_notes.end();
+        auto ns = notes();
+        return std::find(ns.begin(), ns.end(), c.root.n) != ns.end();
     }
 
-    inline std::string to_string() const {
-        return ::jnickg::audio::to_string(this->root) + " " + ::jnickg::audio::to_string(this->scale_type);
+    inline bool contains_note(const note_info& n) const {
+        auto scale_notes = this->key_notes(n.octave);
+        return std::find(scale_notes.begin(), scale_notes.end(), n.n) != scale_notes.end();
+    }
+
+    inline bool contains_note(const note& n) const {
+        auto notes = this->notes();
+        return std::find(notes.begin(), notes.end(), n) != notes.end();
+    }
+
+    inline std::string to_string(bool verbose=false) const {
+        auto str = ::jnickg::audio::to_string(this->root) + " " + ::jnickg::audio::to_string(this->scale_type);
+        if (verbose) {
+            auto notes = this->notes();
+            str += " [";
+            for (auto& n : notes) {
+                str += ::jnickg::audio::to_string(n) + " ";
+            }
+            str += "]";
+        }
+        return str;
     }
 };
 
 inline bool chord_fits_key(const chord_info& c, const key_info& k) {
-    return k.contains_all_chord_notes(c) && k.contains_chord_root(c);
+    // A chord is considerd in the given key if the root note is in the key, and if all the
+    // intervals of the chord fit in the intervals of the key's scale.
+    auto root_in_key = k.contains_chord_root(c);
+    if (!root_in_key) {
+        return false;
+    }
+
+    auto chord_notes = c.get_notes();
+    for(auto note : chord_notes) {
+        if (!k.contains_note(note.n)) {
+            return false;
+        }
+    }
+
+    return true;    
 }
 
 std::vector<chord_info> get_chords(key_info key, bool include_inversions = false);
+std::vector<chord_info> get_chords(note_info root, key_info key, bool include_inversions = false);
 
 } // namespace jnickg::audio

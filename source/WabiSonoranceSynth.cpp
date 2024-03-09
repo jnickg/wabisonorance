@@ -12,14 +12,9 @@ void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSoun
         return;
     }
 
-    jnickg::audio::key_info key {
-        .root = jnickg::audio::note::A,
-        .scale_type = jnickg::audio::scale::minor,
-    };
-
     note_info n(midiNoteNumber);
 
-    auto chords_in_key = get_chords(key, true);
+    auto chords_in_key = get_chords(n, key, true);
     // Get the subset of chords_in_key where the chord actually contains the note being played
     // chords_in_key.erase(
     //     std::remove_if(
@@ -31,10 +26,18 @@ void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSoun
     //     ),
     //     chords_in_key.end()
     // );
+    auto found_chord = true;
+    if (chords_in_key.empty()) {
+        auto& unison = chords_in_key.emplace_back();
+        unison.root = n;
+        unison.chord_type = chord::_unison;
+        unison.inv = inversion::root;
+        found_chord = false;
+    }
     auto idx = static_cast<size_t>(std::rand() % static_cast<int>(chords_in_key.size()));
     jnickg::audio::chord_info& current_chord = chords_in_key[idx];
     auto chord_str = current_chord.to_string(true);
-    printf("Note %s -> Playing chord: %s\n", n.to_string().c_str(), chord_str.c_str());
+    printf("Note %s -> Playing chord: %s%s\n", n.to_string().c_str(), chord_str.c_str(), !found_chord ? " (fallback)" : "");
     auto midi_notes = current_chord.get_midi_notes();
 
     std::vector<double> new_bases;

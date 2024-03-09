@@ -224,3 +224,41 @@ TEST_CASE("jnickg::audio::get_chords(root, include_inversions") {
         }
     }
 }
+
+TEST_CASE("jnickg::audio::key_info") {
+    auto test_key = jnickg::audio::key_info(jnickg::audio::note::C, jnickg::audio::scale::major);
+    REQUIRE(test_key.root == jnickg::audio::note::C);
+    REQUIRE(test_key.scale_type == jnickg::audio::scale::major);
+
+    SECTION("key_notes(octave) returns one octave of notes") {
+        auto notes = test_key.key_notes(4);
+        REQUIRE(notes.size() == 7);
+    }
+
+    SECTION("key_notes(octave) returns expected note_infos") {
+        auto notes = test_key.key_notes(4);
+        REQUIRE((notes[0].n == jnickg::audio::note::C && notes[0].octave == 4));
+        REQUIRE((notes[1].n == jnickg::audio::note::D && notes[1].octave == 4));
+        REQUIRE((notes[2].n == jnickg::audio::note::E && notes[2].octave == 4));
+        REQUIRE((notes[3].n == jnickg::audio::note::F && notes[3].octave == 4));
+        REQUIRE((notes[4].n == jnickg::audio::note::G && notes[4].octave == 4));
+        REQUIRE((notes[5].n == jnickg::audio::note::A && notes[5].octave == 4));
+        REQUIRE((notes[6].n == jnickg::audio::note::B && notes[6].octave == 4));
+    }
+
+    SECTION("contains_all_chord_notes(chord_info) returns true if all notes in chord are in key") {
+        auto test_chord = jnickg::audio::chord_info {
+            .root = jnickg::audio::note_info(jnickg::audio::note::C, 4),
+            .chord_type = jnickg::audio::chord::_maj,
+            .inv = jnickg::audio::inversion::root,
+        };
+
+        REQUIRE(test_key.contains_all_chord_notes(test_chord));
+    }
+}
+
+TEST_CASE("jnickg::audio::get_chords(key_info, include_inversions)") {
+    auto test_key = jnickg::audio::key_info(jnickg::audio::note::C, jnickg::audio::scale::major);
+    auto key_chords = jnickg::audio::get_chords(test_key, true);
+    REQUIRE(!key_chords.empty());
+}

@@ -38,8 +38,9 @@ public:
  */
 class Voice : public juce::SynthesiserVoice
 {
+    jnickg::audio::key_info& key;
 public:
-    Voice() {}
+    Voice(jnickg::audio::key_info& k) :key(k) {}
     ~Voice() override {}
 
     virtual bool canPlaySound (juce::SynthesiserSound* s) override {

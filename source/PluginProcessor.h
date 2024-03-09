@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "WabiSonoranceSynth.hpp"
+#include "NotesKeys.hpp"
 
 #if (MSVC)
 #include "ipps.h"
@@ -15,6 +16,10 @@
 
 class PluginProcessor : public juce::AudioProcessor
 {
+    jnickg::audio::key_info key {
+        .root = jnickg::audio::note::A,
+        .scale_type = jnickg::audio::scale::yonanuki,
+    };
 public:
     PluginProcessor();
     ~PluginProcessor() override;

@@ -17,7 +17,8 @@ PluginProcessor::PluginProcessor()
                      #endif
                        )
 {
-    auto* v = synth.addVoice(new jnickg::audio::ws::Voice());
+    printf("Synth initialized in key: %s\n", key.to_string(true).c_str());
+    auto* v = synth.addVoice(new jnickg::audio::ws::Voice(key));
     auto* s = synth.addSound(new jnickg::audio::ws::Sound());
 
     if (v == nullptr || s == nullptr) {
