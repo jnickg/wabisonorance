@@ -51,6 +51,9 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
+    juce::dsp::Phaser<float> phaser;
+    juce::dsp::Reverb::Parameters reverb_params;
+    juce::dsp::Reverb reverb;
     juce::Synthesiser synth;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)

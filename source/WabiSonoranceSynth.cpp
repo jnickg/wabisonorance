@@ -15,17 +15,6 @@ void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSoun
     note_info n(midiNoteNumber);
 
     auto chords_in_key = get_chords(n, key, true);
-    // Get the subset of chords_in_key where the chord actually contains the note being played
-    // chords_in_key.erase(
-    //     std::remove_if(
-    //         chords_in_key.begin(),
-    //         chords_in_key.end(),
-    //         [&n](const chord_info& c) {
-    //             return std::find(c.get_midi_notes().begin(), c.get_midi_notes().end(), n.to_midi()) == c.get_midi_notes().end();
-    //         }
-    //     ),
-    //     chords_in_key.end()
-    // );
     auto found_chord = true;
     if (chords_in_key.empty()) {
         auto& unison = chords_in_key.emplace_back();
@@ -90,6 +79,7 @@ void Voice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int startSa
             auto osc_sample = this->chord_oscillators[i]->processSample(0.0f);
             osc_sample *= this->adsr.getNextSample();
             osc_sample *= this->gain.getGainLinear();
+            osc_sample = this->filter.processSample(osc_sample);
             outputBuffer.addSample(0, sample, osc_sample);
         }
     }
@@ -107,6 +97,10 @@ void Voice::prepareToPlay(double sampleRate, int samplesPerBlock, int outputChan
 
     this->gain.prepare(spec);
     this->gain.setGainLinear(0.1f); // TODO parameterize
+
+    this->filter.coefficients = juce::dsp::IIR::Coefficients<float>::makeLowPass(sampleRate, 500.0f); // TODO parameterize
+    this->filter.reset();
+    this->filter.prepare(spec);
 
     this->adsr.setSampleRate(sampleRate);
     juce::ADSR::Parameters params;

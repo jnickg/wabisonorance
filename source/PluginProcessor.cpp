@@ -100,17 +100,39 @@ void PluginProcessor::changeProgramName (int index, const juce::String& newName)
 //==============================================================================
 void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    auto outputChannels = this->getTotalNumOutputChannels();
+    auto spec = juce::dsp::ProcessSpec();
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
+    spec.numChannels = static_cast<juce::uint32>(outputChannels);
+
     this->synth.setCurrentPlaybackSampleRate(sampleRate);
 
-    float bpm = 120.0f;
-    
-    auto outputChannels = this->getTotalNumOutputChannels();
+    float bpm = 120.0f; // TODO parameterize... and actually use this
+
     for (auto i = 0; i < this->synth.getNumVoices(); ++i) {
         auto* voice = dynamic_cast<jnickg::audio::ws::Voice*>(this->synth.getVoice(i));
         if (voice != nullptr) {
             voice->prepareToPlay(sampleRate, samplesPerBlock, outputChannels, bpm);
         }
     }
+
+    this->phaser.setRate(1.0f); // TODO parameterize
+    this->phaser.setDepth(0.5f); // TODO parameterize
+    this->phaser.setCentreFrequency(0.5f); // TODO parameterize
+    this->phaser.setFeedback(0.5f); // TODO parameterize
+    this->phaser.setMix(0.5f); // TODO parameterize
+    this->phaser.prepare(spec);
+
+    this->reverb_params.roomSize = 0.5f; // TODO parameterize
+    this->reverb_params.damping = 0.5f; // TODO parameterize
+    this->reverb_params.wetLevel = 0.5f; // TODO parameterize
+    this->reverb_params.dryLevel = 0.5f; // TODO parameterize
+    this->reverb_params.width = 0.5f; // TODO parameterize
+    this->reverb_params.freezeMode = false;
+    this->reverb.setParameters(this->reverb_params);
+    this->reverb.prepare(spec);
+    this->reverb.reset();
 }
 
 void PluginProcessor::releaseResources()
@@ -167,6 +189,13 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     }
 
     this->synth.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+
+    // Apple post FX
+    juce::dsp::AudioBlock<float> block(buffer);
+    // Apply phaser
+    this->phaser.process(juce::dsp::ProcessContextReplacing<float>(block));
+    // Apply reverb
+    this->reverb.process(juce::dsp::ProcessContextReplacing<float>(block));
 }
 
 //==============================================================================

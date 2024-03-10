@@ -40,7 +40,12 @@ class Voice : public juce::SynthesiserVoice
 {
     jnickg::audio::key_info& key;
 public:
-    Voice(jnickg::audio::key_info& k) :key(k) {}
+    Voice(jnickg::audio::key_info& k)
+        : key(k)
+        , filter()
+    {
+        // no-op
+    }
     ~Voice() override {}
 
     virtual bool canPlaySound (juce::SynthesiserSound* s) override {
@@ -132,12 +137,14 @@ private:
 
     std::vector<double> chord_bases;
 
+
+    juce::dsp::IIR::Filter<float> filter;
     juce::dsp::Gain<float> gain;
     juce::ADSR adsr;
-    inline static const float DEFAULT_ATTACK { 0.5f };
-    inline static const float DEFAULT_DECAY { 0.1f };
-    inline static const float DEFAULT_SUSTAIN { 1.0f };
-    inline static const float DEFAULT_RELEASE { 0.5f };
+    inline static const float DEFAULT_ATTACK { 0.25f };
+    inline static const float DEFAULT_DECAY { 1.0f };
+    inline static const float DEFAULT_SUSTAIN { 0.8f };
+    inline static const float DEFAULT_RELEASE { 4.0f };
     double pitch_bend { 1.0 }; ///< Factor by which to bend the pitch.
     float _bpm { 120.0f };
 

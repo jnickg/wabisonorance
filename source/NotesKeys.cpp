@@ -62,6 +62,7 @@ std::vector<chord_info> get_chords(note_info root, bool include_inversions) {
 }
 
 std::vector<chord_info> get_chords(key_info key, bool include_inversions) {
+    init_chords();
     std::vector<chord_info> result;
     for (auto& [root, cs] : chords) {
         for (auto& c : cs) {
@@ -78,6 +79,7 @@ std::vector<chord_info> get_chords(key_info key, bool include_inversions) {
 }
 
 std::vector<chord_info> get_chords(note_info root, key_info key, bool include_inversions) {
+    init_chords();
     // printf("get_chords(%s, %s, %s)\n", root.to_string().c_str(), key.to_string().c_str(), include_inversions ? "true" : "false");
     std::vector<chord_info> result;
     for (auto& c : chords.at(root)) {
