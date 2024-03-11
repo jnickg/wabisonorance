@@ -79,12 +79,23 @@ private:
         Sine,
         Saw,
         Square,
-        Triangle
+        Triangle,
+        SineWithHarmonics
     };
 
-    OscillatorType selected_osc { OscillatorType::Triangle };
+    OscillatorType selected_osc { OscillatorType::SineWithHarmonics };
 
     float clip { 0.6f }; ///< Pre-gain clipping value for the waveform.
+
+    float sine_wave_with_harmonics(float t, std::vector<float> harmonic_weights) const {
+        auto val = 0.0f;
+        // We assume harmonic weights add to one and DO NOT CHECK THAT HERE
+        for (size_t i = 0; i < harmonic_weights.size(); ++i) {
+            float factor = std::pow(2.0f, static_cast<float>(i));
+            val += harmonic_weights[i] * std::sin(factor * t);
+        }
+        return std::clamp(val, -clip, clip);
+    }
 
     float sine_wave(float t) const{
         auto val = std::sin(t);
@@ -110,6 +121,8 @@ private:
         switch(selected_osc) {
             case OscillatorType::Sine:
                 return this->sine_wave(t);
+            case OscillatorType::SineWithHarmonics:
+                return this->sine_wave_with_harmonics(t, {0.5f, 0.25f, 0.125f, 0.0625f});
             case OscillatorType::Saw:
                 return this->saw_wave(t);
             case OscillatorType::Square:
