@@ -16,10 +16,6 @@
 
 class PluginProcessor : public juce::AudioProcessor
 {
-    jnickg::audio::key_info key {
-        .root = jnickg::audio::note::A,
-        .scale_type = jnickg::audio::scale::yonanuki,
-    };
 public:
     PluginProcessor();
     ~PluginProcessor() override;
@@ -51,10 +47,18 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
+    juce::dsp::ProcessSpec spec;
     juce::dsp::Phaser<float> phaser;
     juce::dsp::Reverb::Parameters reverb_params;
     juce::dsp::Reverb reverb;
     juce::Synthesiser synth;
+
+    jnickg::audio::key_info key {
+        .root = jnickg::audio::note::A,
+        .scale_type = jnickg::audio::scale::yonanuki,
+    };
+    double amplitude_modulation_lfo_frequency = 20.0;
+    std::vector<float> amplitude_modulation_lfo;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
 };

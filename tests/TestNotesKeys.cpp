@@ -226,7 +226,10 @@ TEST_CASE("jnickg::audio::get_chords(root, include_inversions") {
 }
 
 TEST_CASE("jnickg::audio::key_info") {
-    auto test_key = jnickg::audio::key_info(jnickg::audio::note::C, jnickg::audio::scale::major);
+    auto test_key = jnickg::audio::key_info {
+        jnickg::audio::note::C,
+        jnickg::audio::scale::major
+    };
     REQUIRE(test_key.root == jnickg::audio::note::C);
     REQUIRE(test_key.scale_type == jnickg::audio::scale::major);
 
@@ -258,7 +261,10 @@ TEST_CASE("jnickg::audio::key_info") {
 }
 
 TEST_CASE("jnickg::audio::get_chords(key_info, include_inversions)") {
-    auto test_key = jnickg::audio::key_info(jnickg::audio::note::C, jnickg::audio::scale::major);
+    auto test_key = jnickg::audio::key_info {
+        jnickg::audio::note::C,
+        jnickg::audio::scale::major
+    };
     auto key_chords = jnickg::audio::get_chords(test_key, true);
     REQUIRE(!key_chords.empty());
 }

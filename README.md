@@ -10,7 +10,7 @@ See [PROPOSAL.md](./PROPOSAL.md) for a description of the project.
 
 ## Building from Source
 
-Follow the instructions found in the [Pamplejuce repo](https://github.com/sudara/pamplejuce). Generally, you need only basic libraries on your system, a C++ compiler supporting C++20 such as LLVM Clang, and CMake.
+Follow the instructions found in the [Pamplejuce repo](https://github.com/sudara/pamplejuce). Generally, you need only basic libraries on your system, a C++ compiler supporting C++20 such as LLVM Clang, and CMake. Use latest versions available for each tool to ensure the compiler doesn't complain about the C++ Code.
 
 1. `git clone git@github.com:jnickg/wabisonorance.git && cd wabisonorance`
 2. `mkdir build && cd build`

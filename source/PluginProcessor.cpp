@@ -101,10 +101,9 @@ void PluginProcessor::changeProgramName (int index, const juce::String& newName)
 void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     auto outputChannels = this->getTotalNumOutputChannels();
-    auto spec = juce::dsp::ProcessSpec();
-    spec.sampleRate = sampleRate;
-    spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
-    spec.numChannels = static_cast<juce::uint32>(outputChannels);
+    this->spec.sampleRate = sampleRate;
+    this->spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
+    this->spec.numChannels = static_cast<juce::uint32>(outputChannels);
 
     this->synth.setCurrentPlaybackSampleRate(sampleRate);
 
@@ -117,12 +116,22 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         }
     }
 
+    auto sample_rate = this->spec.sampleRate;
+    auto lfo_frequency = this->amplitude_modulation_lfo_frequency;
+    auto lfo_period = 1.0 / lfo_frequency;
+    auto lfo_samples = static_cast<size_t>(lfo_period * sample_rate);
+    amplitude_modulation_lfo.clear();
+    amplitude_modulation_lfo.resize(lfo_samples);
+    for (int i = 0; i < lfo_samples; i++) {
+        amplitude_modulation_lfo[i] = std::sin(2.0 * M_PI * lfo_frequency * i / sample_rate);
+    }
+
     this->phaser.setRate(1.0f); // TODO parameterize
     this->phaser.setDepth(0.5f); // TODO parameterize
     this->phaser.setCentreFrequency(0.5f); // TODO parameterize
     this->phaser.setFeedback(0.5f); // TODO parameterize
     this->phaser.setMix(0.5f); // TODO parameterize
-    this->phaser.prepare(spec);
+    this->phaser.prepare(this->spec);
 
     this->reverb_params.roomSize = 0.5f; // TODO parameterize
     this->reverb_params.damping = 0.5f; // TODO parameterize
@@ -131,7 +140,7 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     this->reverb_params.width = 0.5f; // TODO parameterize
     this->reverb_params.freezeMode = false;
     this->reverb.setParameters(this->reverb_params);
-    this->reverb.prepare(spec);
+    this->reverb.prepare(this->spec);
     this->reverb.reset();
 }
 
@@ -194,6 +203,20 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::dsp::AudioBlock<float> block(buffer);
     // Apply phaser
     this->phaser.process(juce::dsp::ProcessContextReplacing<float>(block));
+
+    // Apply amplitude modulation. Using amplitude_modulation_lfo_frequency and
+    // spec.sampleRate, calculate the amplitude modulation signal and apply it
+    // to the buffer.
+    auto num_samples = buffer.getNumSamples();
+    auto num_channels = buffer.getNumChannels();
+    auto lfo_samples = this->amplitude_modulation_lfo.size();
+    for (int i = 0; i < num_samples; i++) {
+        auto lfo_i = static_cast<size_t>(i * lfo_samples / num_samples);
+        for (int j = 0; j < num_channels; j++) {
+            buffer.setSample(j, i, buffer.getSample(j, i) * this->amplitude_modulation_lfo[lfo_i]);
+        }
+    }
+
     // Apply reverb
     this->reverb.process(juce::dsp::ProcessContextReplacing<float>(block));
 }
