@@ -122,7 +122,7 @@ private:
             case OscillatorType::Sine:
                 return this->sine_wave(t);
             case OscillatorType::SineWithHarmonics:
-                return this->sine_wave_with_harmonics(t, {0.5f, 0.25f, 0.125f, 0.0625f});
+                return this->sine_wave_with_harmonics(t, {0.8f, 0.16f, 0.032f, 0.008f});
             case OscillatorType::Saw:
                 return this->saw_wave(t);
             case OscillatorType::Square:
@@ -154,7 +154,7 @@ private:
     juce::dsp::IIR::Filter<float> filter;
     juce::dsp::Gain<float> gain;
     juce::ADSR adsr;
-    inline static const float DEFAULT_ATTACK { 0.25f };
+    inline static const float DEFAULT_ATTACK { 2.0f };
     inline static const float DEFAULT_DECAY { 1.0f };
     inline static const float DEFAULT_SUSTAIN { 0.8f };
     inline static const float DEFAULT_RELEASE { 4.0f };

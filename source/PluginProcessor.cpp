@@ -122,20 +122,23 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     auto lfo_samples = static_cast<size_t>(lfo_period * sample_rate);
     amplitude_modulation_lfo.clear();
     amplitude_modulation_lfo.resize(lfo_samples);
-    for (int i = 0; i < lfo_samples; i++) {
-        amplitude_modulation_lfo[i] = std::sin(2.0 * M_PI * lfo_frequency * i / sample_rate);
+    // printf("lfo_samples: %zu\n\tvalues: ", lfo_samples);
+    for (size_t i = 0; i < lfo_samples; i++) {
+        amplitude_modulation_lfo[i] = static_cast<float>(std::sin(2.0 * M_PI * lfo_frequency * static_cast<double>(i) / sample_rate));
+        // printf("%f ", amplitude_modulation_lfo[i]);
     }
+    // printf("\n");
 
-    this->phaser.setRate(1.0f); // TODO parameterize
-    this->phaser.setDepth(0.5f); // TODO parameterize
-    this->phaser.setCentreFrequency(0.5f); // TODO parameterize
-    this->phaser.setFeedback(0.5f); // TODO parameterize
-    this->phaser.setMix(0.5f); // TODO parameterize
+    this->phaser.setRate(0.5f); // TODO parameterize
+    this->phaser.setDepth(0.7f); // TODO parameterize
+    this->phaser.setCentreFrequency(0.56f); // TODO parameterize
+    this->phaser.setFeedback(1.0f); // TODO parameterize
+    this->phaser.setMix(0.7f); // TODO parameterize
     this->phaser.prepare(this->spec);
 
-    this->reverb_params.roomSize = 0.5f; // TODO parameterize
-    this->reverb_params.damping = 0.5f; // TODO parameterize
-    this->reverb_params.wetLevel = 0.5f; // TODO parameterize
+    this->reverb_params.roomSize = 0.9f; // TODO parameterize
+    this->reverb_params.damping = 0.35f; // TODO parameterize
+    this->reverb_params.wetLevel = 0.7f; // TODO parameterize
     this->reverb_params.dryLevel = 0.5f; // TODO parameterize
     this->reverb_params.width = 0.5f; // TODO parameterize
     this->reverb_params.freezeMode = false;
@@ -207,15 +210,16 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Apply amplitude modulation. Using amplitude_modulation_lfo_frequency and
     // spec.sampleRate, calculate the amplitude modulation signal and apply it
     // to the buffer.
-    auto num_samples = buffer.getNumSamples();
-    auto num_channels = buffer.getNumChannels();
-    auto lfo_samples = this->amplitude_modulation_lfo.size();
-    for (int i = 0; i < num_samples; i++) {
-        auto lfo_i = static_cast<size_t>(i * lfo_samples / num_samples);
-        for (int j = 0; j < num_channels; j++) {
-            buffer.setSample(j, i, buffer.getSample(j, i) * this->amplitude_modulation_lfo[lfo_i]);
-        }
-    }
+    // This sounds like crap so let's leave it out :-)
+    // auto num_samples = buffer.getNumSamples();
+    // auto num_channels = buffer.getNumChannels();
+    // auto lfo_samples = this->amplitude_modulation_lfo.size();
+    // for (int i = 0; i < num_samples; i++) {
+    //     auto lfo_i = static_cast<size_t>(i) % lfo_samples;
+    //     for (int j = 0; j < num_channels; j++) {
+    //         buffer.setSample(j, i, buffer.getSample(j, i) * this->amplitude_modulation_lfo[lfo_i]);
+    //     }
+    // }
 
     // Apply reverb
     this->reverb.process(juce::dsp::ProcessContextReplacing<float>(block));
