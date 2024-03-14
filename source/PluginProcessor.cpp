@@ -71,7 +71,7 @@ bool PluginProcessor::isMidiEffect() const
 
 double PluginProcessor::getTailLengthSeconds() const
 {
-    return 0.0;
+    return jnickg::audio::ws::Voice::DEFAULT_RELEASE;
 }
 
 int PluginProcessor::getNumPrograms()
@@ -141,7 +141,7 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     this->phaser.prepare(this->spec);
 
     this->reverb_params.roomSize = 0.9f; // TODO parameterize
-    this->reverb_params.damping = 0.35f; // TODO parameterize
+    this->reverb_params.damping = 0.5f; // TODO parameterize
     this->reverb_params.wetLevel = 0.7f; // TODO parameterize
     this->reverb_params.dryLevel = 0.5f; // TODO parameterize
     this->reverb_params.width = 0.5f; // TODO parameterize
@@ -208,8 +208,6 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     // Apple post FX
     juce::dsp::AudioBlock<float> block(buffer);
-    // Apply phaser
-    this->phaser.process(juce::dsp::ProcessContextReplacing<float>(block));
 
     // Apply amplitude modulation. Using amplitude_modulation_lfo_frequency and
     // spec.sampleRate, calculate the amplitude modulation signal and apply it
@@ -225,6 +223,8 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     //     }
     // }
 
+    // Apply phaser
+    this->phaser.process(juce::dsp::ProcessContextReplacing<float>(block));
     // Apply reverb
     this->reverb.process(juce::dsp::ProcessContextReplacing<float>(block));
 }

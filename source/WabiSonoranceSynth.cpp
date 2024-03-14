@@ -50,7 +50,7 @@ void Voice::startNote (int midiNoteNumber, float velocity, juce::SynthesiserSoun
     // For now, just pick a random chord
     auto idx = static_cast<size_t>(std::rand() % static_cast<int>(good_chords.size()));
     jnickg::audio::chord_info& current_chord = good_chords[idx];
-    auto chord_str = current_chord.to_string(true);
+    auto chord_str = current_chord.to_string(true, true);
     printf("Note %s -> Playing chord: %s%s\n", n.to_string().c_str(), chord_str.c_str(), !found_chord ? " (fallback)" : "");
     auto midi_notes = current_chord.get_midi_notes();
 

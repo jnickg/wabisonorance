@@ -57,7 +57,7 @@ private:
         .root = jnickg::audio::note::A,
         .scale_type = jnickg::audio::scale::yonanuki,
     };
-    double amplitude_modulation_lfo_frequency = 20.0;
+    double amplitude_modulation_lfo_frequency = 3.0;
     std::vector<float> amplitude_modulation_lfo;
     static inline constexpr size_t NUM_VOICES = 16;
 

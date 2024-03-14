@@ -117,8 +117,12 @@ struct note_info {
         return to_midi() < other.to_midi();
     }
 
-    std::string to_string() const {
-        return ::jnickg::audio::to_string(this->n) + std::to_string(this->octave);
+    std::string to_string(bool verbose = false) const {
+        auto rtn = ::jnickg::audio::to_string(this->n) + std::to_string(this->octave);
+        if (verbose) {
+            rtn += " (" + std::to_string(get_frequency()) + "Hz)";
+        }
+        return rtn;
     }
 
     inline note_info& operator=(const int& midi_key) {
@@ -591,13 +595,13 @@ struct chord_info {
         return std::find(notes.begin(), notes.end(), n) != notes.end();
     }
 
-    std::string to_string(bool verbose = false) const {
+    std::string to_string(bool verbose = false, bool very_verbose = false) const {
         auto str = this->root.to_string() + " " + ::jnickg::audio::to_string(this->chord_type) + " " + ::jnickg::audio::to_string(this->inv);
         if (verbose) {
             auto notes = this->get_notes();
             str += " [";
             for (auto& n : notes) {
-                str += n.to_string() + " ";
+                str += n.to_string(very_verbose) + " ";
             }
             str += "]";
         }
