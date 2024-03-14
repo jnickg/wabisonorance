@@ -150,7 +150,6 @@ private:
 
     std::vector<double> chord_bases;
 
-
     juce::dsp::IIR::Filter<float> filter;
     juce::dsp::Gain<float> gain;
     juce::ADSR adsr;
@@ -195,9 +194,14 @@ private:
         // We want to spread out the central range of velocities, and especially exaggerate the
         // extremes, and map that to attack values ranging from 0.01 to 0.99.
         velocity += 0.001f; // avoid divide by zero
-        float attack_factor = 0.2f / velocity;
-        float attack = DEFAULT_ATTACK * attack_factor;
-        return std::clamp(attack, 0.01f, 0.99f);
+        float attack = 1.0f / std::sqrt(velocity);
+        return std::clamp(attack, 0.1f, DEFAULT_ATTACK);
+    }
+
+    inline float velocity_to_release(float velocity) const {
+        velocity += 0.001f; // avoid divide by zero
+        float release = 1.0f / std::sqrt(velocity);
+        return std::clamp(release, 0.1f, DEFAULT_RELEASE);
     }
 };
 
