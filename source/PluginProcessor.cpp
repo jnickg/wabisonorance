@@ -18,11 +18,15 @@ PluginProcessor::PluginProcessor()
                        )
 {
     printf("Synth initialized in key: %s\n", key.to_string(true).c_str());
-    auto* v = synth.addVoice(new jnickg::audio::ws::Voice(key));
+    for (size_t i = 0; i < NUM_VOICES; i++) {
+        auto* v = synth.addVoice(new jnickg::audio::ws::Voice(key));
+        if (v == nullptr) {
+            throw std::runtime_error("Failed to add voice to synth");
+        }
+    }
     auto* s = synth.addSound(new jnickg::audio::ws::Sound());
-
-    if (v == nullptr || s == nullptr) {
-        throw std::runtime_error("Failed to add voice or sound to synth");
+    if (s == nullptr) {
+        throw std::runtime_error("Failed to add sound to synth");
     }
 
     jnickg::audio::init_chords();

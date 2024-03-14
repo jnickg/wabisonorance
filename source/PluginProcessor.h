@@ -59,6 +59,7 @@ private:
     };
     double amplitude_modulation_lfo_frequency = 20.0;
     std::vector<float> amplitude_modulation_lfo;
+    static inline constexpr size_t NUM_VOICES = 16;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
 };
