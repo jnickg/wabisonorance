@@ -6,7 +6,7 @@ _UI designed using [Melatonin Inspector](https://github.com/sudara/melatonin_ins
 
 ## Introduction
 
-See [PROPOSAL.md](./PROPOSAL.md) for a description of the project.
+See [PROPOSAL.md](./PROPOSAL.md) for a description of the project. See the [YouTube Demo](https://youtu.be/3KDtoU0Px40) for a quick overview of the synth's features.
 
 ## Building from Source
 
@@ -17,7 +17,7 @@ Follow the instructions found in the [Pamplejuce repo](https://github.com/sudara
 3. `cmake ..`
 4. `cmake --build .`
 
-These commands will build `wabisonorance` and install the synthesizer to your system. By default, it's deployed to `~/.vst3/WabiSonorance Synthesizer.vst3`. A standalone version can also be built.
+These commands will build `wabisonorance` and install the synthesizer to your system. By default, it's deployed to `~/.vst3/WabiSonorance Synthesizer.vst3`. A standalone version can also be built and used.
 
 ## Support
 
